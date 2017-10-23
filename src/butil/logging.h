@@ -353,9 +353,15 @@ const LogSeverity BLOG_DFATAL = BLOG_ERROR;
 // A few definitions of macros that don't generate much code. These are used
 // by LOG() and LOG_IF, etc. Since these are used all over our code, it's
 // better to have compact code for these operations.
+#ifdef __SHORT_FILE__
+#define BAIDU_COMPACT_LOG_EX(severity, ClassName, ...)  \
+    ::logging::ClassName(__SHORT_FILE__, __LINE__,    \
+    ::logging::BLOG_##severity, ##__VA_ARGS__)
+#else
 #define BAIDU_COMPACT_LOG_EX(severity, ClassName, ...)  \
     ::logging::ClassName(__FILE__, __LINE__,            \
     ::logging::BLOG_##severity, ##__VA_ARGS__)
+#endif
 
 #define BAIDU_COMPACK_LOG(severity)             \
     BAIDU_COMPACT_LOG_EX(severity, LogMessage)
@@ -400,7 +406,12 @@ const LogSeverity BLOG_0 = BLOG_ERROR;
     (::logging::FLAGS_v >= (verbose_level))
 #endif
 
+#ifdef __SHORT_FILE__
+#define VLOG_IS_ON(verbose_level) BAIDU_VLOG_IS_ON(verbose_level, __SHORT_FILE__)
+#else
 #define VLOG_IS_ON(verbose_level) BAIDU_VLOG_IS_ON(verbose_level, __FILE__)
+
+#endif
 
 DECLARE_int32(v);
 
@@ -471,8 +482,13 @@ void print_vlog_sites(VLogSitePrinter*);
     BAIDU_LAZY_STREAM(LOG_AT_STREAM(severity, file, line), LOG_IS_ON(severity))
 
 // The VLOG macros log with negative verbosities.
+#ifdef __SHORT_FILE__
+#define VLOG_STREAM(verbose_level)                                      \
+    ::logging::LogMessage(__SHORT_FILE__, __LINE__, -(verbose_level)).stream()
+#else
 #define VLOG_STREAM(verbose_level)                                      \
     ::logging::LogMessage(__FILE__, __LINE__, -(verbose_level)).stream()
+#endif
 
 #define VLOG(verbose_level)                                             \
     BAIDU_LAZY_STREAM(VLOG_STREAM(verbose_level), VLOG_IS_ON(verbose_level))
@@ -503,9 +519,15 @@ void print_vlog_sites(VLogSitePrinter*);
      ::logging::Win32ErrorLogMessage(__FILE__, __LINE__, -verbose_level, \
                                      ::logging::GetLastSystemErrorCode()).stream()
 #elif defined(OS_POSIX)
+#ifdef __SHORT_FILE__
+#define VPLOG_STREAM(verbose_level)                                     \
+    ::logging::ErrnoLogMessage(__SHORT_FILE__, __LINE__, -verbose_level,      \
+                               ::logging::GetLastSystemErrorCode()).stream()
+#else
 #define VPLOG_STREAM(verbose_level)                                     \
     ::logging::ErrnoLogMessage(__FILE__, __LINE__, -verbose_level,      \
                                ::logging::GetLastSystemErrorCode()).stream()
+#endif
 #endif
 
 #define VPLOG(verbose_level)                                            \
@@ -571,11 +593,19 @@ void print_vlog_sites(VLogSitePrinter*);
 //
 // TODO(akalin): Rewrite this so that constructs like if (...)
 // CHECK_EQ(...) else { ... } work properly.
+#ifdef __SHORT_FILE__
+#define BAIDU_CHECK_OP(name, op, val1, val2)                                  \
+    if (std::string* _result =                                          \
+        ::logging::Check##name##Impl((val1), (val2),                    \
+                                     #val1 " " #op " " #val2))          \
+        ::logging::LogMessage(__SHORT_FILE__, __LINE__, _result).stream().SetCheck()
+#else
 #define BAIDU_CHECK_OP(name, op, val1, val2)                                  \
     if (std::string* _result =                                          \
         ::logging::Check##name##Impl((val1), (val2),                    \
                                      #val1 " " #op " " #val2))          \
         ::logging::LogMessage(__FILE__, __LINE__, _result).stream().SetCheck()
+#endif
 
 #endif
 
@@ -797,6 +827,16 @@ const LogSeverity BLOG_DCHECK = BLOG_INFO;
 
 // Helper macro for binary operators.
 // Don't use this macro directly in your code, use DCHECK_EQ et al below.
+#ifdef __SHORT_FILE__
+#define BAIDU_DCHECK_OP(name, op, val1, val2)                           \
+    if (DCHECK_IS_ON())                                                   \
+        if (std::string* _result =                                      \
+            ::logging::Check##name##Impl((val1), (val2),                \
+                                         #val1 " " #op " " #val2))      \
+            ::logging::LogMessage(                                      \
+                __SHORT_FILE__, __LINE__, ::logging::BLOG_DCHECK,             \
+                _result).stream()
+#else
 #define BAIDU_DCHECK_OP(name, op, val1, val2)                           \
     if (DCHECK_IS_ON())                                                   \
         if (std::string* _result =                                      \
@@ -805,6 +845,7 @@ const LogSeverity BLOG_DCHECK = BLOG_INFO;
             ::logging::LogMessage(                                      \
                 __FILE__, __LINE__, ::logging::BLOG_DCHECK,             \
                 _result).stream()
+#endif
 
 // Equality/Inequality checks - compare two values, and log a
 // BLOG_DCHECK message including the two values when the result is not
@@ -979,7 +1020,11 @@ private:
 // A non-macro interface to the log facility; (useful
 // when the logging level is not a compile-time constant).
 inline void LogAtLevel(int const log_level, const butil::StringPiece &msg) {
+#ifdef __SHORT_FILE__
+    LogMessage(__SHORT_FILE__, __LINE__, log_level).stream() << msg;
+#else
     LogMessage(__FILE__, __LINE__, log_level).stream() << msg;
+#endif
 }
 
 // This class is used to explicitly ignore values in the conditional
