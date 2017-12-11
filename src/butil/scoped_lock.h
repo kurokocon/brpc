@@ -14,12 +14,12 @@
 // Author: Ge,Jun (gejun@baidu.com)
 // Date: Mon. Nov 7 14:47:36 CST 2011
 
-#ifndef BAIDU_BASE_BAIDU_SCOPED_LOCK_H
-#define BAIDU_BASE_BAIDU_SCOPED_LOCK_H
+#ifndef BUTIL_BAIDU_SCOPED_LOCK_H
+#define BUTIL_BAIDU_SCOPED_LOCK_H
 
 #include "butil/build_config.h"
 
-#if defined(BASE_CXX11_ENABLED)
+#if defined(BUTIL_CXX11_ENABLED)
 #include <mutex>                           // std::lock_guard
 #endif
 
@@ -29,7 +29,7 @@
 #include "butil/errno.h"
 
 // "decltype and call expressions" was supported since GCC 4.8.1
-#if !defined(BASE_CXX11_ENABLED) || GCC_VERSION < 40801
+#if !defined(BUTIL_CXX11_ENABLED) || GCC_VERSION < 40801
 #define BAIDU_SCOPED_LOCK(ref_of_lock)                                  \
     std::lock_guard<BAIDU_TYPEOF(ref_of_lock)>                          \
     BAIDU_CONCAT(scoped_locker_dummy_at_line_, __LINE__)(ref_of_lock)
@@ -50,7 +50,7 @@ std::lock_guard<typename std::remove_reference<T>::type> get_lock_guard();
 
 namespace std {
 
-#if !defined(BASE_CXX11_ENABLED)
+#if !defined(BUTIL_CXX11_ENABLED)
 
 // Do not acquire ownership of the mutex
 struct defer_lock_t {};
@@ -146,7 +146,7 @@ private:
     bool                            _owns_lock;
 };
 
-#endif // !defined(BASE_CXX11_ENABLED)
+#endif // !defined(BUTIL_CXX11_ENABLED)
 
 #if defined(OS_POSIX)
 
@@ -397,4 +397,4 @@ void double_lock(std::unique_lock<Mutex1> &lck1, std::unique_lock<Mutex2> &lck2)
 
 };
 
-#endif  // BAIDU_BASE_BAIDU_SCOPED_LOCK_H
+#endif  // BUTIL_BAIDU_SCOPED_LOCK_H

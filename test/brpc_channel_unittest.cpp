@@ -1,4 +1,4 @@
-// Baidu RPC - A framework to host and access services throughout Baidu.
+// brpc - A framework to host and access services throughout Baidu.
 // Copyright (c) 2014 Baidu, Inc.
 
 // Date: Sun Jul 13 15:04:18 CST 2014
@@ -418,7 +418,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }            
         StopAndJoin();
     }
@@ -519,7 +519,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }
         StopAndJoin();
     }
@@ -571,7 +571,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }
         StopAndJoin();
     }
@@ -615,7 +615,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }
         StopAndJoin();
     }
@@ -664,7 +664,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }
         StopAndJoin();
     }
@@ -725,7 +725,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }
         StopAndJoin();
     }
@@ -854,7 +854,7 @@ protected:
         tm.start();
         CallMethod(&channel, &cntl, &req, &res, async);
         tm.stop();
-        EXPECT_LT(abs(tm.u_elapsed() - carg.sleep_before_cancel_us), 10000);
+        EXPECT_LT(labs(tm.u_elapsed() - carg.sleep_before_cancel_us), 10000);
         ASSERT_EQ(0, pthread_join(th, NULL));
         EXPECT_EQ(ECANCELED, cntl.ErrorCode());
         EXPECT_EQ(0, cntl.sub_count());
@@ -895,14 +895,14 @@ protected:
         tm.start();
         CallMethod(&channel, &cntl, &req, &res, async);
         tm.stop();
-        EXPECT_LT(abs(tm.u_elapsed() - carg.sleep_before_cancel_us), 10000);
+        EXPECT_LT(labs(tm.u_elapsed() - carg.sleep_before_cancel_us), 10000);
         ASSERT_EQ(0, pthread_join(th, NULL));
         EXPECT_EQ(ECANCELED, cntl.ErrorCode());
         EXPECT_EQ(NCHANS, (size_t)cntl.sub_count());
         for (int i = 0; i < cntl.sub_count(); ++i) {
             EXPECT_EQ(ECANCELED, cntl.sub(i)->ErrorCode()) << "i=" << i;
         }
-        EXPECT_LT(abs(cntl.latency_us() - carg.sleep_before_cancel_us), 10000);
+        EXPECT_LT(labs(cntl.latency_us() - carg.sleep_before_cancel_us), 10000);
         StopAndJoin();
     }
 
@@ -937,7 +937,7 @@ protected:
         tm.start();
         CallMethod(&channel, &cntl, &req, &res, async);
         tm.stop();
-        EXPECT_LT(abs(tm.u_elapsed() - carg.sleep_before_cancel_us), 10000);
+        EXPECT_LT(labs(tm.u_elapsed() - carg.sleep_before_cancel_us), 10000);
         ASSERT_EQ(0, pthread_join(th, NULL));
         EXPECT_EQ(ECANCELED, cntl.ErrorCode());
         EXPECT_EQ(1, cntl.sub_count());
@@ -1026,7 +1026,7 @@ protected:
                 bthread_usleep(1000);
             }
         } else {
-            EXPECT_EQ(1ul, _messenger.ConnectionCount());
+            EXPECT_GE(1ul, _messenger.ConnectionCount());
         }            
         StopAndJoin();
     }
@@ -1120,7 +1120,7 @@ protected:
         CallMethod(&channel, &cntl, &req, &res, async);
         tm.stop();
         EXPECT_EQ(brpc::ERPCTIMEDOUT, cntl.ErrorCode()) << cntl.ErrorText();
-        EXPECT_LT(abs(tm.m_elapsed() - cntl.timeout_ms()), 10);
+        EXPECT_LT(labs(tm.m_elapsed() - cntl.timeout_ms()), 10);
         StopAndJoin();
     }
 
@@ -1156,7 +1156,7 @@ protected:
         for (int i = 0; i < cntl.sub_count(); ++i) {
             EXPECT_EQ(ECANCELED, cntl.sub(i)->ErrorCode()) << "i=" << i;
         }
-        EXPECT_LT(abs(tm.m_elapsed() - cntl.timeout_ms()), 10);
+        EXPECT_LT(labs(tm.m_elapsed() - cntl.timeout_ms()), 10);
         StopAndJoin();
     }
 
@@ -1209,7 +1209,7 @@ protected:
                 EXPECT_EQ(0, cntl.sub(i)->ErrorCode());
             }
         }
-        EXPECT_LT(abs(tm.m_elapsed() - cntl.timeout_ms()), 10);
+        EXPECT_LT(labs(tm.m_elapsed() - cntl.timeout_ms()), 10);
         StopAndJoin();
     }
 
@@ -1242,7 +1242,7 @@ protected:
         EXPECT_EQ(brpc::ERPCTIMEDOUT, cntl.ErrorCode()) << cntl.ErrorText();
         EXPECT_EQ(1, cntl.sub_count());
         EXPECT_EQ(brpc::ERPCTIMEDOUT, cntl.sub(0)->ErrorCode());
-        EXPECT_LT(abs(tm.m_elapsed() - cntl.timeout_ms()), 10);
+        EXPECT_LT(labs(tm.m_elapsed() - cntl.timeout_ms()), 10);
         StopAndJoin();
     }
     
@@ -1291,7 +1291,8 @@ protected:
         CallMethod(&channel, &cntl, &req, &res, async);
         
         EXPECT_TRUE(brpc::EEOF == cntl.ErrorCode() ||
-                    brpc::ETOOMANYFAILS == cntl.ErrorCode()) << cntl.ErrorText();
+                    brpc::ETOOMANYFAILS == cntl.ErrorCode() ||
+                    ECONNRESET == cntl.ErrorCode()) << cntl.ErrorText();
         StopAndJoin();
     }
 
@@ -2439,7 +2440,7 @@ TEST_F(ChannelTest, global_channel_should_quit_successfully) {
     g_chan.Init("bns://qa-pbrpc.SAT.tjyx", "rr", NULL);
 }
 
-TEST_F(ChannelTest, unused) {
+TEST_F(ChannelTest, unused_call_id) {
     {
         brpc::Controller cntl;
     }

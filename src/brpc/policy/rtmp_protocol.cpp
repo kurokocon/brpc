@@ -2214,8 +2214,9 @@ bool RtmpChunkStream::OnDataMessageAMF0(
             // Ignore empty metadata (seen in pulling streams from quanmin)
             return false;
         }
-        AMFObject metadata;
-        if (!ReadAMFObject(&metadata, &istream)) {
+        RtmpMetaData metadata;
+        metadata.timestamp = mh.timestamp;
+        if (!ReadAMFObject(&metadata.data, &istream)) {
             RTMP_ERROR(socket, mh) << "Fail to read metadata";
             return false;
         }
@@ -3537,7 +3538,6 @@ butil::Status
 RtmpCreateStreamMessage::AppendAndDestroySelf(butil::IOBuf* out, Socket* s) {
     std::unique_ptr<RtmpCreateStreamMessage> destroy_self(this);
     if (s == NULL) {  // abandoned
-        RPC_VLOG << "[DEBUG] Socket=NULL";
         return butil::Status::OK();
     }
     // Serialize createStream command
@@ -3597,8 +3597,6 @@ RtmpCreateStreamMessage::AppendAndDestroySelf(butil::IOBuf* out, Socket* s) {
         socket->SetFailed(EINVAL, "Fail to serialize message");
         return butil::Status(EINVAL, "Fail to serialize message");
     }
-    RPC_VLOG << "[DEBUG] Succeed to call AppendAndDestroySelf, size=" << out->size()
-             << " SocketId=" << s->id();
     return butil::Status::OK();
 }
 

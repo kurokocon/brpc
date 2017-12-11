@@ -93,7 +93,7 @@ typedef butil::atomic<int> EpollButex;
 static EpollButex* const CLOSING_GUARD = (EpollButex*)(intptr_t)-1L;
 
 #ifndef NDEBUG
-butil::static_atomic<int> break_nums = BASE_STATIC_ATOMIC_INIT(0);
+butil::static_atomic<int> break_nums = BUTIL_STATIC_ATOMIC_INIT(0);
 #endif
 
 // Able to address 67108864 file descriptors, should be enough.
@@ -231,12 +231,11 @@ public:
             return -1;
         }
 #endif        
-        const int rc = butex_wait(butex, expected_val, abstime);
-        if (rc < 0 && errno == EWOULDBLOCK) {
-            // EpollThread did wake up, there's data.
-            return 0;
+        if (butex_wait(butex, expected_val, abstime) < 0 &&
+            errno != EWOULDBLOCK && errno != EINTR) {
+            return -1;
         }
-        return rc;
+        return 0;
     }
 
     int fd_close(int fd) {

@@ -44,7 +44,6 @@ BUTIL_SOURCES = \
     src/butil/at_exit.cc \
     src/butil/atomicops_internals_x86_gcc.cc \
     src/butil/base64.cc \
-    src/butil/base_switches.cc \
     src/butil/big_endian.cc \
     src/butil/cpu.cc \
     src/butil/debug/alias.cc \
@@ -140,7 +139,8 @@ BUTIL_SOURCES = \
     src/butil/zero_copy_stream_as_streambuf.cpp \
     src/butil/crc32c.cc \
     src/butil/containers/case_ignored_flat_map.cpp \
-    src/butil/iobuf.cpp
+    src/butil/iobuf.cpp \
+    src/butil/popen.cpp
 
 BUTIL_OBJS = $(addsuffix .o, $(basename $(BUTIL_SOURCES)))
 
@@ -180,16 +180,16 @@ PROTOS=$(BRPC_PROTOS) src/idl_options.proto
 all:  protoc-gen-mcpack libbrpc.a libbrpc.so output/include output/lib output/bin
 
 .PHONY:debug
-debug: libbrpc.dbg.a libbvar.dbg.a
+debug: test/libbrpc.dbg.a test/libbvar.dbg.a
 
 .PHONY:clean
-clean:clean_debug
+clean:
 	@echo "Cleaning"
 	@rm -rf src/mcpack2pb/generator.o protoc-gen-mcpack libbrpc.a libbrpc.so $(OBJS) output/include output/lib output/bin $(PROTOS:.proto=.pb.h) $(PROTOS:.proto=.pb.cc)
 
 .PHONY:clean_debug
 clean_debug:
-	@rm -rf libbrpc.dbg.a libbvar.dbg.a $(DEBUG_OBJS)
+	@rm -rf test/libbrpc.dbg.a test/libbvar.dbg.a $(DEBUG_OBJS)
 
 .PRECIOUS: %.o
 
@@ -206,11 +206,11 @@ libbrpc.so:$(BRPC_PROTOS:.proto=.pb.h) $(OBJS)
 	@echo "Linking $@"
 	@$(CXX) -shared -o $@ $(LIBPATHS) $(SOPATHS) -Xlinker "-(" $(filter %.o,$^) -Xlinker "-)" $(STATIC_LINKINGS) $(DYNAMIC_LINKINGS)
 
-libbvar.dbg.a:$(BVAR_DEBUG_OBJS)
+test/libbvar.dbg.a:$(BVAR_DEBUG_OBJS)
 	@echo "Packing $@"
 	@ar crs $@ $^
 
-libbrpc.dbg.a:$(BRPC_PROTOS:.proto=.pb.h) $(DEBUG_OBJS)
+test/libbrpc.dbg.a:$(BRPC_PROTOS:.proto=.pb.h) $(DEBUG_OBJS)
 	@echo "Packing $@"
 	@ar crs $@ $(filter %.o,$^)
 
