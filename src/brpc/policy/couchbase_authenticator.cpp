@@ -26,9 +26,14 @@ namespace brpc {
 namespace policy {
 
 namespace {
+// "constexpr" keyword was supported since GCC 4.6
+#if GCC_VERSION < 40600
+#define constexpr const
+#endif
 
 constexpr char kPlainAuthCommand[] = "PLAIN";
 constexpr char kPadding[1] = {'\0'};
+
 
 }  // namespace
 
