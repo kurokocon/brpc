@@ -282,13 +282,13 @@ private:
 #define BUTIL_STATIC_ATOMIC_INIT(val) { (val) }
 
 // std::atomic<_Tp*>::store() is declared but not implemented until GCC 4.5.2
-#if defined(BASE_CXX11_ENABLED) && GCC_VERSION < 40502
+#if defined(BUTIL_CXX11_ENABLED) && GCC_VERSION < 40502
 namespace std {
 template<typename _Tp>
 void atomic<_Tp*>::store(_Tp* __p, memory_order __m) volatile
 { atomic_address::store(__p, __m); }
 }  // namespace std
-#endif  // BASE_CXX11_ENABLED && GCC_VERSION < 40502
+#endif  // BUTIL_CXX11_ENABLED && GCC_VERSION < 40502
 
 namespace butil {
 
