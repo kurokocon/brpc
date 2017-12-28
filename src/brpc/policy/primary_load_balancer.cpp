@@ -14,11 +14,12 @@
 
 // Authors: Zhao,Chong (zhaochong@bigo.sg)
 
-#include <butil/logging.h>
+#include <gflags/gflags.h>
+
+#include "butil/logging.h"
 #include "butil/macros.h"
 #include "brpc/socket.h"
 #include "brpc/policy/primary_load_balancer.h"
-#include <gflags/gflags.h>
 
 // primary_lb_failure_window_s and primary_lb_failure_count_threshold should be set recording to 
 // the timeout value, if timeout value of the channel is large, primary_lb_failure_window_s is
@@ -58,10 +59,19 @@ bool PrimaryLoadBalancer::Remove(Servers& bg, const ServerId& id) {
     return false;
 }
 
+bool PrimaryLoadBalancer::Destruct(Servers& bg) {
+    std::map<SocketId, SocketStatus>::iterator it = bg.status_map.begin();
+    for (; it != bg.status_map.end(); it++) {
+        it->second.Destroy();
+    }
+    return true;
+}
+
 bool PrimaryLoadBalancer::Change(Servers& bg, const SocketId& id, uint64_t time_us) {
     std::map<SocketId, SocketStatus>::iterator it = bg.status_map.find(id);
     // time_us == 0 means success, delete this entry.
     if (time_us == 0 && it != bg.status_map.end()) {
+        it->second.Destroy();
         bg.status_map.erase(it);
         return true;
     }
@@ -177,6 +187,7 @@ PrimaryLoadBalancer* PrimaryLoadBalancer::New() const {
 }
 
 void PrimaryLoadBalancer::Destroy() {
+    _db_servers.Modify(Destruct);
     delete this;
 }
 
@@ -229,9 +240,16 @@ PrimaryLoadBalancer::SocketStatus::SocketStatus() : last_remove_time(0) {
     count = new bvar::Adder<int>();
     window_count = new bvar::Window<bvar::Adder<int>>(count, FLAGS_primary_lb_failure_window_s);
 }
-PrimaryLoadBalancer::SocketStatus::~SocketStatus() {
-    delete window_count;
-    delete count;
+
+void PrimaryLoadBalancer::SocketStatus::Destroy() {
+    if (NULL != window_count) {
+        delete window_count;
+        window_count = NULL;
+    }
+    if (NULL != count) {
+        delete count;
+        count = NULL;
+    }
 }
 
 }  // namespace policy

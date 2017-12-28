@@ -22,7 +22,6 @@
 #include "butil/containers/doubly_buffered_data.h"
 #include "brpc/load_balancer.h"
 
-
 namespace brpc {
 namespace policy {
 
@@ -46,10 +45,13 @@ private:
     struct SocketStatus {
         uint64_t last_remove_time;
         bvar::Adder<int> *count;
-        bvar::Window<bvar::Adder<int>> *window_count;  // 5s
+        bvar::Window<bvar::Adder<int>> *window_count;
         
         SocketStatus();
-        ~SocketStatus();
+
+        // In the load balancer, Destroy is protected by double buffer mutex.
+        // Destroy should be called before destruct method.
+        void Destroy();
     };
     struct Servers {
         std::vector<ServerId> server_list;
@@ -59,6 +61,7 @@ private:
     static bool Add(Servers& bg, const ServerId& id);
     static bool Change(Servers& bg, const SocketId& id, uint64_t time_us);
     static bool Remove(Servers& bg, const ServerId& id);
+    static bool Destruct(Servers& bg);
     static size_t BatchAdd(Servers& bg, const std::vector<ServerId>& servers);
     static size_t BatchRemove(Servers& bg, const std::vector<ServerId>& servers);
 
