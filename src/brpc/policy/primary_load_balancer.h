@@ -40,18 +40,20 @@ public:
     void Describe(std::ostream& os, const DescribeOptions&);
     
 private:
-    // SocketStatus is used by double data buffer, data buffer need copy constructor,
-    // But bvar types disallow copy and assign constructors, so use pointer here.
     struct SocketStatus {
+     public:
         uint64_t last_remove_time;
-        bvar::Adder<int> *count;
-        bvar::Window<bvar::Adder<int>> *window_count;
-        
+     public:
         SocketStatus();
+        SocketStatus(const SocketStatus &status);
 
-        // In the load balancer, Destroy is protected by double buffer mutex.
-        // Destroy should be called before destruct method.
-        void Destroy();
+        void AddFailCount(int n);
+        int GetFailCount();
+     private:
+        bvar::Adder<int> _count;
+        bvar::Window<bvar::Adder<int>> _window_count;
+
+        DISALLOW_ASSIGN(SocketStatus);
     };
     struct Servers {
         std::vector<ServerId> server_list;
@@ -61,7 +63,6 @@ private:
     static bool Add(Servers& bg, const ServerId& id);
     static bool Change(Servers& bg, const SocketId& id, uint64_t time_us);
     static bool Remove(Servers& bg, const ServerId& id);
-    static bool Destruct(Servers& bg);
     static size_t BatchAdd(Servers& bg, const std::vector<ServerId>& servers);
     static size_t BatchRemove(Servers& bg, const std::vector<ServerId>& servers);
 

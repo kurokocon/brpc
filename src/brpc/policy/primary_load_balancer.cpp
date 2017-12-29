@@ -59,19 +59,10 @@ bool PrimaryLoadBalancer::Remove(Servers& bg, const ServerId& id) {
     return false;
 }
 
-bool PrimaryLoadBalancer::Destruct(Servers& bg) {
-    std::map<SocketId, SocketStatus>::iterator it = bg.status_map.begin();
-    for (; it != bg.status_map.end(); it++) {
-        it->second.Destroy();
-    }
-    return true;
-}
-
 bool PrimaryLoadBalancer::Change(Servers& bg, const SocketId& id, uint64_t time_us) {
     std::map<SocketId, SocketStatus>::iterator it = bg.status_map.find(id);
     // time_us == 0 means success, delete this entry.
     if (time_us == 0 && it != bg.status_map.end()) {
-        it->second.Destroy();
         bg.status_map.erase(it);
         return true;
     }
@@ -79,8 +70,8 @@ bool PrimaryLoadBalancer::Change(Servers& bg, const SocketId& id, uint64_t time_
     // Use reference here.
     SocketStatus &status = bg.status_map[id];
     // Failure count add 1.
-    (*status.count) << 1;
-    if (status.window_count->get_value() >= FLAGS_primary_lb_failure_count_threshold || status.last_remove_time > 0) {
+    status.AddFailCount(1);
+    if (status.GetFailCount() >= FLAGS_primary_lb_failure_count_threshold || status.last_remove_time > 0) {
         // Fail too many times in the window, mark the server removed.
         // Or if the servered was marked removed, update the removed time.
         status.last_remove_time = time_us;
@@ -187,7 +178,6 @@ PrimaryLoadBalancer* PrimaryLoadBalancer::New() const {
 }
 
 void PrimaryLoadBalancer::Destroy() {
-    _db_servers.Modify(Destruct);
     delete this;
 }
 
@@ -236,20 +226,19 @@ void PrimaryLoadBalancer::Feedback(const CallInfo& info) {
     }
 }
 
-PrimaryLoadBalancer::SocketStatus::SocketStatus() : last_remove_time(0) {
-    count = new bvar::Adder<int>();
-    window_count = new bvar::Window<bvar::Adder<int>>(count, FLAGS_primary_lb_failure_window_s);
+PrimaryLoadBalancer::SocketStatus::SocketStatus() : last_remove_time(0),
+                        _count(0), _window_count(&_count, FLAGS_primary_lb_failure_window_s) {
 }
 
-void PrimaryLoadBalancer::SocketStatus::Destroy() {
-    if (NULL != window_count) {
-        delete window_count;
-        window_count = NULL;
-    }
-    if (NULL != count) {
-        delete count;
-        count = NULL;
-    }
+PrimaryLoadBalancer::SocketStatus::SocketStatus(const SocketStatus &status) : last_remove_time(status.last_remove_time), _count(0), _window_count(&_count, FLAGS_primary_lb_failure_window_s) {
+}
+
+void PrimaryLoadBalancer::SocketStatus::AddFailCount(int n) {
+    _count << n;
+}
+
+int PrimaryLoadBalancer::SocketStatus::GetFailCount() {
+    return _window_count.get_value();
 }
 
 }  // namespace policy
