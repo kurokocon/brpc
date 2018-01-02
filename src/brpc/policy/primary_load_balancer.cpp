@@ -227,10 +227,10 @@ void PrimaryLoadBalancer::Feedback(const CallInfo& info) {
 }
 
 PrimaryLoadBalancer::SocketStatus::SocketStatus() : last_remove_time(0),
-                        _count(0), _window_count(&_count, FLAGS_primary_lb_failure_window_s) {
+                        _count(), _window_count(&_count, FLAGS_primary_lb_failure_window_s) {
 }
 
-PrimaryLoadBalancer::SocketStatus::SocketStatus(const SocketStatus &status) : last_remove_time(status.last_remove_time), _count(0), _window_count(&_count, FLAGS_primary_lb_failure_window_s) {
+PrimaryLoadBalancer::SocketStatus::SocketStatus(const SocketStatus &status) : last_remove_time(status.last_remove_time), _count(), _window_count(&_count, FLAGS_primary_lb_failure_window_s) {
 }
 
 void PrimaryLoadBalancer::SocketStatus::AddFailCount(int n) {
