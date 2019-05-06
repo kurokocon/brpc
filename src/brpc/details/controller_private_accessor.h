@@ -52,7 +52,7 @@ public:
     int current_retry_count() const {
         return _cntl->_current_call.nretry;
     }
-    
+
     ControllerPrivateAccessor &set_peer_id(SocketId peer_id) {
         _cntl->_current_call.peer_id = peer_id;
         return *this;
@@ -66,7 +66,7 @@ public:
         CHECK(_cntl->_current_call.sending_sock == NULL);
         _cntl->_current_call.sending_sock.reset(ptr.release());
     }
-    
+
     ControllerPrivateAccessor &set_security_mode(bool security_mode) {
         _cntl->set_flag(Controller::FLAGS_SECURITY_MODE, security_mode);
         return *this;
@@ -127,6 +127,29 @@ public:
 
     void add_with_auth() {
         _cntl->add_flag(Controller::FLAGS_REQUEST_WITH_AUTH);
+    }
+
+    ExcludedServers* set_accessed(ExcludedServers* accessed) {
+    	ExcludedServers* old_accessed  = _cntl->_accessed;
+	_cntl->_accessed = accessed;
+	return old_accessed;
+    }
+
+    SocketId get_peer_id(){
+	return _cntl->_current_call.peer_id;
+    }
+
+    std::string& protocol_param() { return _cntl->protocol_param(); }
+    const std::string& protocol_param() const { return _cntl->protocol_param(); }
+
+    // Note: This function can only be called in server side. The deadline of client
+    // side is properly set in the RPC sending path.
+    void set_deadline_us(int64_t deadline_us) { _cntl->_deadline_us = deadline_us; }
+
+    ControllerPrivateAccessor& set_begin_time_us(int64_t begin_time_us) {
+        _cntl->_begin_time_us = begin_time_us;
+        _cntl->_end_time_us = UNSET_MAGIC_NUM;
+        return *this;
     }
 
 private:
