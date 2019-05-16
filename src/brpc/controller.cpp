@@ -152,6 +152,9 @@ void Controller::DeleteStuff() {
         Span::Submit(_span, butil::cpuwide_time_us());
     }
     _error_text.clear();
+    _logic_error_text.clear();
+    _remote_side = butil::EndPoint();
+    _local_side = butil::EndPoint();
     if (_session_local_data) {
         _server->_session_local_data_pool->Return(_session_local_data);
     }
@@ -207,6 +210,7 @@ void Controller::InternalReset(bool in_constructor) {
     set_pb_bytes_to_base64(true);
 #endif
     _error_code = 0;
+    _logic_error_code = 0;
     _remote_side = butil::EndPoint();
     _local_side = butil::EndPoint();
     _session_local_data = NULL;
@@ -322,8 +326,16 @@ bool Controller::Failed() const {
     return FailedInline();
 }
 
+bool Controller::LogicFailed() const {
+    return _logic_error_code;
+}
+
 std::string Controller::ErrorText() const {
     return _error_text;
+}
+
+std::string Controller::LogicErrorText() const {
+    return _logic_error_text;
 }
 
 void StartCancel(CallId id) {
@@ -429,6 +441,45 @@ void Controller::SetFailed(int error_code, const char* reason_fmt, ...) {
         _span->AnnotateCStr(_error_text.c_str() + old_size, 0);
     }
     UpdateResponseHeader(this);
+}
+
+void Controller::SetLogicFailedVa(int error_code, const char* reason_fmt, va_list args) {
+    if (error_code == 0) {
+        CHECK(false) << "error_code is 0";
+        error_code = -1;
+    }
+    _logic_error_code = error_code;
+    if (!_logic_error_text.empty()) {
+        _logic_error_text.push_back(' ');
+    }
+    if (_logic_error_code != -1) {
+        butil::string_appendf(&_logic_error_text, "[E%d]", _logic_error_code);
+    }
+    butil::string_vappendf(&_logic_error_text, reason_fmt, args);
+}
+
+int Controller::SetLogicFailed(int error_code, const char* reason_fmt, ...) {
+    if(error_code<ELogicErrBegin || error_code>ELogicErrEnd) {
+        LOG(ERROR) << "invalid logic err_code:" << error_code;
+        return -1;
+    }
+    va_list ap;
+    va_start(ap, reason_fmt);
+    SetLogicFailedVa(error_code, reason_fmt, ap);
+    va_end(ap);
+    return 0;
+}
+
+int Controller::SetKvLogicFailed(int error_code, const char* reason_fmt, ...) {
+    if(error_code<EKvLogicErrBegin || error_code>EKvLogicErrEnd) {
+        LOG(ERROR) << "invalid kv_logic err_code:" << error_code;
+        return -1;
+    }
+    va_list ap;
+    va_start(ap, reason_fmt);
+    SetLogicFailedVa(error_code, reason_fmt, ap);
+    va_end(ap);
+    return 0;
 }
 
 void Controller::CloseConnection(const char* reason_fmt, ...) {
@@ -551,7 +602,7 @@ void Controller::OnVersionedRPCReturned(const CompletionInfo& info,
             _unfinished_call->OnComplete(this, _error_code, info.responded);
             delete _unfinished_call;
             _unfinished_call = NULL;
-        }  
+        }
         _error_code = saved_error;
         CHECK_EQ(0, bthread_id_unlock(info.id));
         return;
@@ -620,7 +671,7 @@ void Controller::OnVersionedRPCReturned(const CompletionInfo& info,
             _http_response->Clear();
         }
         response_attachment().clear();
-        
+
         return IssueRPC(butil::gettimeofday_us());
     }
     
@@ -765,7 +816,7 @@ void Controller::Call::OnComplete(Controller* c, int error_code/*note*/,
     }
     // Release the `Socket' we used to send/receive data
     sending_sock.reset(NULL);
-    
+
     if (need_feedback) {
         const LoadBalancer::CallInfo info =
             { begin_time_us, peer_id, error_code, c };
@@ -835,11 +886,14 @@ void Controller::EndRPC(const CompletionInfo& info) {
             CHECK(false) << "A previous non-backed-up call responded";
         }
     }
-    
+
     // Clear _error_text when the call succeeded, otherwise a successful
     // call with non-empty ErrorText may confuse user.
     if (!_error_code) {
         _error_text.clear();
+    }
+    if (!_logic_error_code) {
+        _logic_error_text.clear();
     }
     // RPC finished, now it's safe to release `LoadBalancerWithNaming'
     _lb.reset();
@@ -940,6 +994,7 @@ void Controller::IssueRPC(int64_t start_realtime_us) {
     _current_call.begin_time_us = start_realtime_us;
     // Clear last error, Don't clear _error_text because we append to it.
     _error_code = 0;
+    _logic_error_code = 0;
 
     // Make versioned correlation_id.
     // call_id         : unversioned, mainly for ECANCELED and ERPCTIMEDOUT
