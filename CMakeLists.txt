@@ -381,7 +381,7 @@ add_subdirectory(src)
 if(BUILD_UNIT_TESTS)
     add_subdirectory(test)
 endif()
-add_subdirectory(tools)
+# add_subdirectory(tools)
 
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/brpc/
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/output/include/brpc/
