@@ -120,7 +120,11 @@ inline int Socket::Dereference() {
 
 inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
     const butil::ResourceId<Socket> slot = SlotOfSocketId(id);
-    Socket* const m = address_resource(slot);
+    Socket* const m = address_resource(slot);(
+    LOG(ERROR) << "Address info: " << m << ',' << id << ',';
+    if (m != NULL) {
+        LOG(ERROR) << "Address info1: " << m->_versioned_ref;
+    }
     if (__builtin_expect(m != NULL, 1)) {
         // acquire fence makes sure this thread sees latest changes before
         // Dereference() or Revive().
