@@ -7,8 +7,8 @@ include config.mk
 # 3. Removed -Werror: Not block compilation for non-vital warnings, especially when the
 #    code is tested on newer systems. If the code is used in production, add -Werror back
 CPPFLAGS+=-DBTHREAD_USE_FAST_PTHREAD_MUTEX -D__const__= -D_GNU_SOURCE -DUSE_SYMBOLIZE -DNO_TCMALLOC -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DNDEBUG -DBRPC_REVISION=\"$(shell git rev-parse --short HEAD)\"
-CXXFLAGS=$(CPPFLAGS) -O2 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter -fno-omit-frame-pointer -std=c++0x
-CFLAGS=$(CPPFLAGS) -O2 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer
+CXXFLAGS=$(CPPFLAGS) -O0 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter -fno-omit-frame-pointer -std=c++0x
+CFLAGS=$(CPPFLAGS) -O0 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer
 DEBUG_CXXFLAGS = $(filter-out -DNDEBUG,$(CXXFLAGS)) -DUNIT_TEST -DBVAR_NOT_LINK_DEFAULT_VARIABLES
 DEBUG_CFLAGS = $(filter-out -DNDEBUG,$(CFLAGS)) -DUNIT_TEST
 HDRPATHS=-I./src $(addprefix -I, $(HDRS))
@@ -277,12 +277,12 @@ output/bin:protoc-gen-mcpack
 	@$(CXX) -c $(HDRPATHS) $(CXXFLAGS) $< -o $@
 
 %http2_rpc_protocol.dbg.o:%http2_rpc_protocol.cpp
-	@echo "Compiling $@ with O2"
-	@$(CXX) -c $(HDRPATHS) -O2 $(DEBUG_CXXFLAGS) $< -o $@
+	@echo "Compiling $@ with O0"
+	@$(CXX) -c $(HDRPATHS) -O0 $(DEBUG_CXXFLAGS) $< -o $@
 
 %hpack.dbg.o:%hpack.cpp
-	@echo "Compiling $@ with O2"
-	@$(CXX) -c $(HDRPATHS) -O2 $(DEBUG_CXXFLAGS) $< -o $@
+	@echo "Compiling $@ with O0"
+	@$(CXX) -c $(HDRPATHS) -O0 $(DEBUG_CXXFLAGS) $< -o $@
 
 %.dbg.o:%.cpp
 	@echo "Compiling $@"
