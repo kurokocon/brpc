@@ -634,8 +634,10 @@ int CharArrayStreamBuf::overflow(int ch) {
         setp(NULL, NULL);
         return std::streambuf::traits_type::eof();
     }
-    memcpy(new_data, _data, _size);
-    free(_data);
+    if (_data != NULL) {
+        memcpy(new_data, _data, _size);
+        free(_data);
+    }
     _data = new_data;
     const size_t old_size = _size;
     _size = new_size;
