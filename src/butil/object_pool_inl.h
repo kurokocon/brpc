@@ -80,7 +80,7 @@ public:
 };
 
 template <typename T>
-class BAIDU_CACHELINE_ALIGNMENT ObjectPool {
+class alignas(64) ObjectPool {
 public:
     static const size_t BLOCK_NITEM = ObjectPoolBlockItemNum<T>::value;
     static const size_t FREE_CHUNK_NITEM = BLOCK_NITEM;

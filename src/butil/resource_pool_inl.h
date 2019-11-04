@@ -96,7 +96,7 @@ public:
 
 
 template <typename T>
-class alignas(128) ResourcePool {
+class alignas(64) ResourcePool {
 public:
     static const size_t BLOCK_NITEM = ResourcePoolBlockItemNum<T>::value;
     static const size_t FREE_CHUNK_NITEM = BLOCK_NITEM;
