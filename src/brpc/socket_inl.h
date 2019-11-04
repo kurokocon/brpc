@@ -118,61 +118,7 @@ inline int Socket::Dereference() {
     return -1;
 }
 
-int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
-    const butil::ResourceId<Socket> slot = SlotOfSocketId(id);
-    Socket* const m = address_resource(slot);
-    LOG(ERROR) << "Address info: " << m << ',' << id << ',';
-    if (m != NULL) {
-        LOG(ERROR) << "Address info1: " << m->_versioned_ref;
-    }
 
-    if (__builtin_expect(m != NULL, 1)) {
-        // acquire fence makes sure this thread sees latest changes before
-        // Dereference() or Revive().
-        const uint64_t vref1 = m->_versioned_ref.fetch_add(
-            1, butil::memory_order_acquire);
-        const uint32_t ver1 = VersionOfVRef(vref1);
-        if (ver1 == VersionOfSocketId(id)) {
-            ptr->reset(m);
-            return 0;
-        }
-
-        const uint64_t vref2 = m->_versioned_ref.fetch_sub(
-            1, butil::memory_order_release);
-        const int32_t nref = NRefOfVRef(vref2);
-        if (nref > 1) {
-            return -3;
-        } else if (__builtin_expect(nref == 1, 1)) {
-            const uint32_t ver2 = VersionOfVRef(vref2);
-            if ((ver2 & 1)) {
-                if (ver1 == ver2 || ver1 + 1 == ver2) {
-                    uint64_t expected_vref = vref2 - 1;
-                    if (m->_versioned_ref.compare_exchange_strong(
-                            expected_vref, MakeVRef(ver2 + 1, 0),
-                            butil::memory_order_acquire,
-                            butil::memory_order_relaxed)) {
-                        m->OnRecycle();
-                        return_resource(SlotOfSocketId(id));
-                    }
-                } else {
-                    CHECK(false) << "ref-version=" << ver1
-                                 << " unref-version=" << ver2;
-                                 return -4;
-                }
-            } else {
-                CHECK_EQ(ver1, ver2);
-                // Addressed a free slot.
-            }
-            return -6;
-        } else {
-            CHECK(false) << "Over dereferenced SocketId=" << id;
-            return -5;
-        }
-    } else {
-        return -2;
-    }
-    return -8;
-}
 
 inline void Socket::ReAddress(SocketUniquePtr* ptr) {
     _versioned_ref.fetch_add(1, butil::memory_order_acquire);
