@@ -239,7 +239,9 @@ int SocketMap::Insert(const SocketMapKey& key, SocketId* id,
     // use SocketUniquePtr which cannot put into containers before c++11.
     // The ref will be removed at entry's removal.
     SocketUniquePtr ptr;
-    if (Socket::Address(tmp_id, &ptr) != 0) {
+    auto dbg_ret = Socket::Address(tmp_id, &ptr);
+    LOG(ERROR) << "Ret val of address is: " << dbg_ret;
+    if (dbg_ret != 0) {
         LOG(FATAL) << "Fail to address SocketId=" << tmp_id;
         return -1;
     }
