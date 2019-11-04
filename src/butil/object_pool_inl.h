@@ -80,7 +80,7 @@ public:
 };
 
 template <typename T>
-class alignas(64) ObjectPool {
+class alignas(128) ObjectPool {
 public:
     static const size_t BLOCK_NITEM = ObjectPoolBlockItemNum<T>::value;
     static const size_t FREE_CHUNK_NITEM = BLOCK_NITEM;
