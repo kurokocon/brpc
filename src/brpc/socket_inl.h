@@ -119,7 +119,6 @@ inline int Socket::Dereference() {
 }
 
 inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
-    return -10;
     const butil::ResourceId<Socket> slot = SlotOfSocketId(id);
     Socket* const m = address_resource(slot);
     LOG(ERROR) << "Address info: " << m << ',' << id << ',';
