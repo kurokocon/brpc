@@ -98,9 +98,9 @@ DECLARE_int32(health_check_timeout_ms);
 int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
     const butil::ResourceId<Socket> slot = SlotOfSocketId(id);
     Socket* const m = address_resource(slot);
-    LOG(ERROR) << "Address info: " << m << ',' << id << ',';
+    // LOG(ERROR) << "Address info: " << m << ',' << id << ',';
     if (m != NULL) {
-        LOG(ERROR) << "Address info1: " << m->_versioned_ref;
+        // LOG(ERROR) << "Address info1: " << m->_versioned_ref;
     }
 
     if (__builtin_expect(m != NULL, 1)) {

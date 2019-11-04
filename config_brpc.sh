@@ -21,7 +21,7 @@ TEMP=`getopt -o v: --long headers:,libs:,cc:,cxx:,with-short-log-name,with-glog,
 WITH_GLOG=0
 WITH_THRIFT=0
 WITH_MESALINK=0
-DEBUGSYMBOLS="-g -fsanitize=undefined -fno-inline -O0"
+DEBUGSYMBOLS="-g"
 
 if [ $? != 0 ] ; then >&2 $ECHO "Terminating..."; exit 1 ; fi
 
