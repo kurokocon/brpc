@@ -125,6 +125,7 @@ inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
     if (m != NULL) {
         LOG(ERROR) << "Address info1: " << m->_versioned_ref;
     }
+
     if (__builtin_expect(m != NULL, 1)) {
         // acquire fence makes sure this thread sees latest changes before
         // Dereference() or Revive().
@@ -140,7 +141,7 @@ inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
             1, butil::memory_order_release);
         const int32_t nref = NRefOfVRef(vref2);
         if (nref > 1) {
-            return -1;
+            return -3;
         } else if (__builtin_expect(nref == 1, 1)) {
             const uint32_t ver2 = VersionOfVRef(vref2);
             if ((ver2 & 1)) {
@@ -164,6 +165,8 @@ inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
         } else {
             CHECK(false) << "Over dereferenced SocketId=" << id;
         }
+    } else {
+        return -2;
     }
     return -1;
 }
