@@ -157,13 +157,16 @@ inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
                 } else {
                     CHECK(false) << "ref-version=" << ver1
                                  << " unref-version=" << ver2;
+                                 return -4;
                 }
             } else {
                 CHECK_EQ(ver1, ver2);
                 // Addressed a free slot.
             }
+            return -6;
         } else {
             CHECK(false) << "Over dereferenced SocketId=" << id;
+            return -5;
         }
     } else {
         return -2;
