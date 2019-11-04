@@ -171,7 +171,7 @@ inline int Socket::Address(SocketId id, SocketUniquePtr* ptr) {
     } else {
         return -2;
     }
-    return -1;
+    return -8;
 }
 
 inline void Socket::ReAddress(SocketUniquePtr* ptr) {
