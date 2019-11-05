@@ -1,16 +1,19 @@
-// Copyright (c) 2014 Baidu, Inc.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
 // Authors: Ge,Jun (gejun@baidu.com)
 //          Rujie Jiang(jiangrujie@baidu.com)
@@ -41,7 +44,7 @@
 #include "brpc/retry_policy.h"
 #include "brpc/stream_impl.h"
 #include "brpc/policy/streaming_rpc_protocol.h" // FIXME
-#include "brpc/rpc_dump.pb.h"
+#include "brpc/rpc_dump.h"
 #include "brpc/details/usercode_backup_pool.h"  // RunUserCode
 #include "brpc/mongo_service_adaptor.h"
 
@@ -160,7 +163,7 @@ void Controller::ResetNonPods() {
         _server->_session_local_data_pool->Return(_session_local_data);
     }
     _mongo_session_data.reset();
-    delete _rpc_dump_meta;
+    delete _sampled_request;
 
     if (!is_used_by_rpc() && _correlation_id != INVALID_BTHREAD_ID) {
         CHECK_NE(EPERM, bthread_id_cancel(_correlation_id));
@@ -215,7 +218,7 @@ void Controller::ResetPods() {
     _server = NULL;
     _oncancel_id = INVALID_BTHREAD_ID;
     _auth_context = NULL;
-    _rpc_dump_meta = NULL;
+    _sampled_request = NULL;
     _request_protocol = PROTOCOL_UNKNOWN;
     _max_retry = UNSET_MAGIC_NUM;
     _retry_policy = NULL;
@@ -739,7 +742,7 @@ inline bool does_error_affect_main_socket(int error_code) {
         error_code == EINVAL/*returned by connect "0.0.0.1"*/;
 }
 
-//Note: A RPC call is probably consisted by serveral individual Calls such as
+//Note: A RPC call is probably consisted by several individual Calls such as
 //      retries and backup requests. This method simply cares about the error of
 //      this very Call (specified by |error_code|) rather than the error of the
 //      entire RPC (specified by c->FailedInline()).
@@ -876,7 +879,7 @@ void Controller::EndRPC(const CompletionInfo& info) {
                          << info.id << " current_cid=" << current_id()
                          << " initial_cid=" << _correlation_id
                          << " stream_user_data=" << _current_call.stream_user_data
-                         << " sending_sock=" << *_current_call.sending_sock;
+                         << " sending_sock=" << _current_call.sending_sock.get();
         }
         _current_call.OnComplete(this, ECANCELED, false, false);
         if (_unfinished_call != NULL) {
@@ -1089,7 +1092,7 @@ void Controller::IssueRPC(int64_t start_realtime_us) {
     }
     // Handle connection type
     if (_connection_type == CONNECTION_TYPE_SINGLE ||
-        _stream_creator != NULL) { // let user decides the sending_socket
+        _stream_creator != NULL) { // let user decides the sending_sock
         // in the callback(according to connection_type) directly
         _current_call.sending_sock.reset(tmp_sock.release());
         // TODO(gejun): Setting preferred index of single-connected socket
@@ -1384,9 +1387,9 @@ void WebEscape(const std::string& source, std::string* output) {
     }
 }
 
-void Controller::reset_rpc_dump_meta(RpcDumpMeta* meta) { 
-    delete _rpc_dump_meta;
-    _rpc_dump_meta = meta;
+void Controller::reset_sampled_request(SampledRequest* req) {
+    delete _sampled_request;
+    _sampled_request = req;
 }
 
 void Controller::set_stream_creator(StreamCreator* sc) {
