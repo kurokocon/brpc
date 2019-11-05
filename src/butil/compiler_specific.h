@@ -263,12 +263,13 @@
 # define BAIDU_CACHELINE_ALIGNMENT __declspec(align(BAIDU_CACHELINE_SIZE))
 #endif /* _MSC_VER */
 
-//#ifdef __GNUC__
+#ifdef __GNUC__
 # define BAIDU_CACHELINE_ALIGNMENT __attribute__((aligned(BAIDU_CACHELINE_SIZE)))
-//#endif /* __GNUC__ */
+#endif /* __GNUC__ */
 
 #ifndef BAIDU_CACHELINE_ALIGNMENT
-# define BAIDU_CACHELINE_ALIGNMENT /*BAIDU_CACHELINE_ALIGNMENT*/
+#error "GNUC not defined!"
+//# define BAIDU_CACHELINE_ALIGNMENT /*BAIDU_CACHELINE_ALIGNMENT*/
 #endif
 
 #ifndef BAIDU_NOEXCEPT
